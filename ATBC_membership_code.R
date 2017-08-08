@@ -96,3 +96,24 @@ levels(members$MembershipCategory)[levels(members$MembershipCategory)=="FREE Stu
 # How many unique ID numbers
 # How many people in all 4 years, 3 years, 2 years, 1 year
 
+# NUMBER OF UNIQUE MEMBERS DURING TIME FRAME UNDER CONSIDERATION
+TOTALMEMBERS<-members %>% summarize(Total = n_distinct(SubReference))
+
+# NUMBER OF MEMBERS PER YEAR
+members$SubReference<-as.factor(members$SubReference)
+Members_per_Year<-members %>% group_by(Year) %>% summarize(Total = n_distinct(SubReference))
+
+# NUMBER OF MEMBERS PER YEAR, BY CATEGORY
+Members_per_CatPerYr<-members %>% group_by(MembershipCategory, Year) %>% summarize(Total = n_distinct(SubReference))
+
+# Number of years each person was a member
+# there are 2 that are listed 2x in one year, so group by year as well
+YrsOfMembership<-members %>% group_by(SubReference) %>% count(SubReference)
+YrsOfMembership$n<-as.factor(YrsOfMembership$n)
+
+str(YrsOfMembership)
+
+
+
+YrsOfMembershipSummary<-YrsOfMembership %>%  group_by(n) %>% count(n) %>% mutate(freq = nn / sum(nn))
+
