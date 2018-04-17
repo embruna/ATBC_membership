@@ -28,7 +28,7 @@ rm(list=ls())
 # This avoids mistakes, esnures consistent analyses and figures
 #
 FirstYear=2013
-LastYear=2017
+LastYear=2018
 #
 ###############################################################
 ##############################################################
@@ -49,6 +49,7 @@ LastYear=2017
 ##############################################################
 # DATA CLEANUP & ORGANIZATION: Membership
 ##############################################################
+member18<-read.csv("./Data/BTP-ATBC_MemberReport_2-21-18.csv", dec=".", header = TRUE, sep = ",", check.names=FALSE, stringsAsFactors = FALSE, strip.white=TRUE )
 member17<-read.csv("./Data/BTP-ATBC_MemberReport_6-21-17.csv", dec=".", header = TRUE, sep = ",", check.names=FALSE, stringsAsFactors = FALSE, strip.white=TRUE )
 member16<-read.csv("./Data/BTP-ATBC_MemberReport_9-21-16.csv", dec=".", header = TRUE, sep = ",", check.names=FALSE, stringsAsFactors = FALSE, strip.white=TRUE )
 member15<-read.csv("./Data/BTP-ATBC_MemberReport_9-21-15.csv", dec=".", header = TRUE, sep = ",", check.names=FALSE, stringsAsFactors = FALSE, strip.white=TRUE )
@@ -62,15 +63,31 @@ colnames(member14)
 colnames(member15)
 colnames(member16)
 colnames(member17)
+colnames(member18)
 # One of the column names is different
 member15<-rename(member15, SubReference=SubsReference) #rename the columns
+member18<-rename(member18,   "MembershipCategory"="Membership Reference",'SubReference'='Subscription  Reference',"email"="e-mail address","phone"="phone number","Zip"="Zip/Postal Code","State"="State Code","PaymentDate"="Payment Date","FirstName"="First Name") #rename the columns
+member18$Year<-2018
+member18$MiddleName<-NA
+member18 <- member18[c("Year","SubReference","MembershipCategory","PaymentDate","Salutation","FirstName","MiddleName","Surname","Suffix","Address1","Address2","Address3","City","State","Zip","Country","email","phone")]
+
+
+#Need to convert this to a function!
+# Snippet to find out who didn't renew from Year X to Year Y 
+YearX <- member17
+YearXplus1<-member18
+
+DNR<-setdiff(YearX$SubReference, YearXplus1$SubReference) #DNR=did not renew
+DNR<-YearX[YearX$SubReference %in% DNR,]
+DNR #those in Year X that are not in Year Xplus1
+
 
 #Bind the membership data 
-members<-rbind(member13,member14,member15,member16,member17) 
+members<-rbind(member13,member14,member15,member16,member17,member18) 
 write.csv(members, file="./Data/members.csv", row.names = T) #export it as a csv file
 
 #Don't Need the original files or Messy ChoData cluttering up the Env't so lets delete
-rm(member13,member14,member15,member16,member17)
+rm(member13,member14,member15,member16,member17,member18)
 
 
 # There are many different categories, so tried to standardize them
@@ -115,8 +132,8 @@ Members_per_CatPerYr
 YrsOfMembership<-members %>% group_by(SubReference) %>% count(SubReference)
 YrsOfMembership$n<-as.factor(YrsOfMembership$n)
 
-five_yr_members<-which(YrsOfMembership$n==5)
-core_members<-semi_join(members,YrsOfMembership[five_yr_members,],by="SubReference")
+six_yr_members<-which(YrsOfMembership$n==6)
+core_members<-semi_join(members,YrsOfMembership[six_yr_members,],by="SubReference")
 
 str(YrsOfMembership)
 YrsOfMembershipSummary<-YrsOfMembership %>%  group_by(n) %>% count(n) %>% mutate(freq = nn / sum(nn))
@@ -138,6 +155,8 @@ names(Fate2013)[3] <- "YR2014"
 names(Fate2013)[4] <- "YR2015"
 names(Fate2013)[5] <- "YR2016"
 names(Fate2013)[6] <- "YR2017"
+names(Fate2013)[7] <- "YR2018"
+
 Fate2013<-as.data.frame(Fate2013)
 Fate2013$SUM<-(ncol(Fate2013)-1)
 Fate2013$SUM<-Fate2013$SUM-rowSums(is.na(Fate2013))
@@ -147,9 +166,11 @@ Two_Year<-Fate2013 %>% filter(YR2013 == "Y" & YR2014 == "Y" & SUM == 2) %>% summ
 Three_Year<-Fate2013 %>% filter(YR2013 == "Y" & YR2014 == "Y"& YR2015 == "Y" & SUM == 3) %>% summarize(n_distinct(SubReference))
 Four_Year<-Fate2013 %>% filter(YR2013 == "Y" & YR2014 == "Y"& YR2015 == "Y" & YR2016 == "Y" & SUM == 4) %>% summarize(n_distinct(SubReference))
 Five_Year<-Fate2013 %>% filter(YR2013 == "Y" & SUM == 5) %>% summarize(n_distinct(SubReference))
+Six_Year<-Fate2013 %>% filter(YR2013 == "Y" & SUM == 6) %>% summarize(n_distinct(SubReference))
 
-Count<-c(One_Year,Two_Year,Three_Year,Four_Year,Five_Year)
-YearsStaying<-c(1,2,3,4,5)
+
+Count<-c(One_Year,Two_Year,Three_Year,Four_Year,Five_Year,Six_Year)
+YearsStaying<-c(1,2,3,4,5,6)
 DropOff2013<-cbind(Count,YearsStaying)
 DropOff2013<-as.data.frame(DropOff2013, row.names = FALSE)
 DropOff2013$Count<-unlist(DropOff2013$Count)
